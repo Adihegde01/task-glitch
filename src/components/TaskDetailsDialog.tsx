@@ -25,9 +25,14 @@ export default function TaskDetailsDialog({ open, task, onClose, onSave }: Props
   if (!task) return null;
 
   const handleSave = () => {
+    const nextRevenue = typeof revenue === 'number' ? revenue : task.revenue;
+    const nextTime = typeof timeTaken === 'number' && timeTaken > 0 ? timeTaken : task.timeTaken;
+
+    if (nextTime <= 0) return; // Prevention
+
     onSave(task.id, {
-      revenue: typeof revenue === 'number' ? revenue : task.revenue,
-      timeTaken: typeof timeTaken === 'number' && timeTaken > 0 ? timeTaken : task.timeTaken,
+      revenue: nextRevenue,
+      timeTaken: nextTime,
       notes: notes.trim() || undefined,
     });
     onClose();

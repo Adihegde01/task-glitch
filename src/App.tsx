@@ -19,8 +19,10 @@ import {
 } from '@/utils/logic';
 
 function AppContent() {
-  const { loading, error, metrics, derivedSorted, addTask, updateTask, deleteTask, undoDelete, lastDeleted } = useTasksContext();
-  const handleCloseUndo = () => {};
+  const { loading, error, metrics, derivedSorted, addTask, updateTask, deleteTask, undoDelete, lastDeleted, clearLastDeleted } = useTasksContext();
+  const handleCloseUndo = () => {
+    clearLastDeleted();
+  };
   const [q, setQ] = useState('');
   const [fStatus, setFStatus] = useState<string>('All');
   const [fPriority, setFPriority] = useState<string>('All');
@@ -44,19 +46,19 @@ function AppContent() {
 
   const handleAdd = useCallback((payload: Omit<Task, 'id'>) => {
     addTask(payload);
-    setActivity(prev => [createActivity('add', `Added: ${payload.title}`), ...prev].slice(0, 50));
+    setActivity((prev: ActivityItem[]) => [createActivity('add', `Added: ${payload.title}`), ...prev].slice(0, 50));
   }, [addTask, createActivity]);
   const handleUpdate = useCallback((id: string, patch: Partial<Task>) => {
     updateTask(id, patch);
-    setActivity(prev => [createActivity('update', `Updated: ${Object.keys(patch).join(', ')}`), ...prev].slice(0, 50));
+    setActivity((prev: ActivityItem[]) => [createActivity('update', `Updated: ${Object.keys(patch).join(', ')}`), ...prev].slice(0, 50));
   }, [updateTask, createActivity]);
   const handleDelete = useCallback((id: string) => {
     deleteTask(id);
-    setActivity(prev => [createActivity('delete', `Deleted task ${id}`), ...prev].slice(0, 50));
+    setActivity((prev: ActivityItem[]) => [createActivity('delete', `Deleted task ${id}`), ...prev].slice(0, 50));
   }, [deleteTask, createActivity]);
   const handleUndo = useCallback(() => {
     undoDelete();
-    setActivity(prev => [createActivity('undo', 'Undo delete'), ...prev].slice(0, 50));
+    setActivity((prev: ActivityItem[]) => [createActivity('undo', 'Undo delete'), ...prev].slice(0, 50));
   }, [undoDelete, createActivity]);
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default' }}>
@@ -89,7 +91,7 @@ function AppContent() {
             <MetricsBar
               metricsOverride={{
                 totalRevenue: computeTotalRevenue(filtered),
-                totalTimeTaken: filtered.reduce((s, t) => s + t.timeTaken, 0),
+                totalTimeTaken: filtered.reduce((s: number, t: Task) => s + t.timeTaken, 0),
                 timeEfficiencyPct: computeTimeEfficiency(filtered),
                 revenuePerHour: computeRevenuePerHour(filtered),
                 averageROI: computeAverageROI(filtered),
@@ -100,13 +102,13 @@ function AppContent() {
           {!loading && !error && (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
               <TextField placeholder="Search by title" value={q} onChange={e => setQ(e.target.value)} fullWidth />
-              <Select value={fStatus} onChange={e => setFStatus(e.target.value)} displayEmpty sx={{ minWidth: 180 }}>
+              <Select value={fStatus} onChange={e => setFStatus(e.target.value as string)} displayEmpty sx={{ minWidth: 180 }}>
                 <MenuItem value="All">All Statuses</MenuItem>
                 <MenuItem value="Todo">Todo</MenuItem>
                 <MenuItem value="In Progress">In Progress</MenuItem>
                 <MenuItem value="Done">Done</MenuItem>
               </Select>
-              <Select value={fPriority} onChange={e => setFPriority(e.target.value)} displayEmpty sx={{ minWidth: 180 }}>
+              <Select value={fPriority} onChange={e => setFPriority(e.target.value as string)} displayEmpty sx={{ minWidth: 180 }}>
                 <MenuItem value="All">All Priorities</MenuItem>
                 <MenuItem value="High">High</MenuItem>
                 <MenuItem value="Medium">Medium</MenuItem>
@@ -127,7 +129,7 @@ function AppContent() {
           {!loading && !error && <AnalyticsDashboard tasks={filtered} />}
           {!loading && !error && <ActivityLog items={activity} />}
           <UndoSnackbar open={!!lastDeleted} onClose={handleCloseUndo} onUndo={handleUndo} />
-         </Stack>
+        </Stack>
       </Container>
     </Box>
   );

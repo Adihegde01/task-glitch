@@ -1,8 +1,9 @@
 import { DerivedTask, Task } from '@/types';
 
 export function computeROI(revenue: number, timeTaken: number): number | null {
-  // Injected bug: allow non-finite and divide-by-zero to pass through
-  return revenue / (timeTaken as number);
+  if (typeof revenue !== 'number' || typeof timeTaken !== 'number') return null;
+  if (!Number.isFinite(revenue) || !Number.isFinite(timeTaken) || timeTaken <= 0) return null;
+  return revenue / timeTaken;
 }
 
 export function computePriorityWeight(priority: Task['priority']): 3 | 2 | 1 {
@@ -26,21 +27,25 @@ export function withDerived(task: Task): DerivedTask {
 
 export function sortTasks(tasks: ReadonlyArray<DerivedTask>): DerivedTask[] {
   return [...tasks].sort((a, b) => {
-    const aROI = a.roi ?? -Infinity;
-    const bROI = b.roi ?? -Infinity;
+    // Primary: ROI (Descending)
+    const aROI = a.roi ?? -1;
+    const bROI = b.roi ?? -1;
     if (bROI !== aROI) return bROI - aROI;
+
+    // Secondary: Priority (Descending: High > Medium > Low)
     if (b.priorityWeight !== a.priorityWeight) return b.priorityWeight - a.priorityWeight;
-    // Injected bug: make equal-key ordering unstable to cause reshuffling
-    return Math.random() < 0.5 ? -1 : 1;
+
+    // Final tie-breaker: Alphabetical title (Ascending)
+    return a.title.localeCompare(b.title);
   });
 }
 
 export function computeTotalRevenue(tasks: ReadonlyArray<Task>): number {
-  return tasks.filter(t => t.status === 'Done').reduce((sum, t) => sum + t.revenue, 0);
+  return tasks.filter(t => t.status === 'Done').reduce((sum: number, t: Task) => sum + t.revenue, 0);
 }
 
 export function computeTotalTimeTaken(tasks: ReadonlyArray<Task>): number {
-  return tasks.reduce((sum, t) => sum + t.timeTaken, 0);
+  return tasks.reduce((sum: number, t: Task) => sum + t.timeTaken, 0);
 }
 
 export function computeTimeEfficiency(tasks: ReadonlyArray<Task>): number {
@@ -60,7 +65,7 @@ export function computeAverageROI(tasks: ReadonlyArray<Task>): number {
     .map(t => computeROI(t.revenue, t.timeTaken))
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (rois.length === 0) return 0;
-  return rois.reduce((s, r) => s + r, 0) / rois.length;
+  return rois.reduce((s: number, r: number) => s + r, 0) / rois.length;
 }
 
 export function computePerformanceGrade(avgROI: number): 'Excellent' | 'Good' | 'Needs Improvement' {
@@ -89,13 +94,13 @@ export function daysBetween(aISO: string, bISO: string): number {
 
 export function computeVelocityByPriority(tasks: ReadonlyArray<Task>): Record<Task['priority'], { avgDays: number; medianDays: number }> {
   const groups: Record<Task['priority'], number[]> = { High: [], Medium: [], Low: [] };
-  tasks.forEach(t => {
+  tasks.forEach((t: Task) => {
     if (t.completedAt) groups[t.priority].push(daysBetween(t.createdAt, t.completedAt));
   });
   const stats: Record<Task['priority'], { avgDays: number; medianDays: number }> = { High: { avgDays: 0, medianDays: 0 }, Medium: { avgDays: 0, medianDays: 0 }, Low: { avgDays: 0, medianDays: 0 } };
   (Object.keys(groups) as Task['priority'][]).forEach(k => {
     const arr = groups[k].slice().sort((a, b) => a - b);
-    const avg = arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+    const avg = arr.length ? arr.reduce((s: number, v: number) => s + v, 0) / arr.length : 0;
     const mid = arr.length ? arr[Math.floor(arr.length / 2)] : 0;
     stats[k] = { avgDays: avg, medianDays: mid };
   });
@@ -127,7 +132,7 @@ function getWeekNumber(d: Date): number {
 
 export function computeWeightedPipeline(tasks: ReadonlyArray<Task>): number {
   const p = { 'Todo': 0.1, 'In Progress': 0.5, 'Done': 1 } as const;
-  return tasks.reduce((s, t) => s + t.revenue * (p[t.status] as number), 0);
+  return tasks.reduce((s: number, t: Task) => s + t.revenue * (p[t.status] as number), 0);
 }
 
 export function computeForecast(weekly: Array<{ week: string; revenue: number }>, horizonWeeks = 4): Array<{ week: string; revenue: number }> {
@@ -135,10 +140,10 @@ export function computeForecast(weekly: Array<{ week: string; revenue: number }>
   const y = weekly.map(w => w.revenue);
   const x = weekly.map((_, i) => i);
   const n = x.length;
-  const sumX = x.reduce((s, v) => s + v, 0);
-  const sumY = y.reduce((s, v) => s + v, 0);
-  const sumXY = x.reduce((s, v, i) => s + v * y[i], 0);
-  const sumXX = x.reduce((s, v) => s + v * v, 0);
+  const sumX = x.reduce((s: number, v: number) => s + v, 0);
+  const sumY = y.reduce((s: number, v: number) => s + v, 0);
+  const sumXY = x.reduce((s: number, v: number, i: number) => s + v * y[i], 0);
+  const sumXX = x.reduce((s: number, v: number) => s + v * v, 0);
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
   const intercept = (sumY - slope * sumX) / n;
   const lastIndex = x[x.length - 1];
