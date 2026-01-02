@@ -13,6 +13,8 @@ export interface Task {
   completedAt?: string; // ISO date string if Done
 }
 
+export type NewTask = Omit<Task, 'id' | 'createdAt'> & { id?: string; createdAt?: string };
+
 export interface DerivedTask extends Task {
   roi: number | null; // null means N/A
   priorityWeight: 3 | 2 | 1;

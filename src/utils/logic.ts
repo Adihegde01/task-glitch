@@ -12,6 +12,8 @@ export function computePriorityWeight(priority: Task['priority']): 3 | 2 | 1 {
       return 3;
     case 'Medium':
       return 2;
+    case 'Low':
+      return 1;
     default:
       return 1;
   }
@@ -55,8 +57,9 @@ export function computeTimeEfficiency(tasks: ReadonlyArray<Task>): number {
 }
 
 export function computeRevenuePerHour(tasks: ReadonlyArray<Task>): number {
-  const revenue = computeTotalRevenue(tasks);
-  const time = computeTotalTimeTaken(tasks);
+  const doneTasks = tasks.filter(t => t.status === 'Done');
+  const revenue = computeTotalRevenue(doneTasks);
+  const time = doneTasks.reduce((sum, t) => sum + t.timeTaken, 0);
   return time > 0 ? revenue / time : 0;
 }
 

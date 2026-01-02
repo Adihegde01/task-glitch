@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DerivedTask, Metrics, Task } from '@/types';
+import { DerivedTask, Metrics, Task, NewTask } from '@/types';
 import {
   computeAverageROI,
   computePerformanceGrade,
@@ -19,7 +19,7 @@ interface UseTasksState {
   derivedSorted: DerivedTask[];
   metrics: Metrics;
   lastDeleted: Task | null;
-  addTask: (task: Omit<Task, 'id'> & { id?: string }) => void;
+  addTask: (task: NewTask) => void;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   undoDelete: () => void;
@@ -50,7 +50,7 @@ export function useTasks(): UseTasksState {
       return {
         id: t.id,
         title: t.title,
-        revenue: Number(t.revenue) ?? 0,
+        revenue: Number(t.revenue) || 0,
         timeTaken: Number(t.timeTaken) > 0 ? Number(t.timeTaken) : 1,
         priority: t.priority,
         status: t.status,
@@ -105,7 +105,7 @@ export function useTasks(): UseTasksState {
     return { totalRevenue, totalTimeTaken, timeEfficiencyPct, revenuePerHour, averageROI, performanceGrade };
   }, [tasks]);
 
-  const addTask = useCallback((task: Omit<Task, 'id'> & { id?: string }) => {
+  const addTask = useCallback((task: NewTask) => {
     setTasks((prev: Task[]) => {
       const id = task.id ?? crypto.randomUUID();
       const timeTaken = task.timeTaken <= 0 ? 1 : task.timeTaken; // auto-correct
